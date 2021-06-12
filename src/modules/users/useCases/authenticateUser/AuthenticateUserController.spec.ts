@@ -10,7 +10,7 @@ const johnDoe: ICreateUserDTO = {
 }
 let connection: Connection
 
-describe("Create User Integration", () => {
+describe("Authentication User Integration", () => {
 
   beforeAll(async () => {
     connection = await createConnection()
