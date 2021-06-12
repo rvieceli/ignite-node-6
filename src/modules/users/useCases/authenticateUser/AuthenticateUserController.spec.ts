@@ -26,7 +26,7 @@ describe("Authentication User Integration", () => {
     await connection.close()
   })
 
-  it("should be able to create a new user", async () => {
+  it("should be able to authenticate a user", async () => {
     const { status, body } = await request(app).post("/api/v1/sessions").send({
       email: johnDoe.email,
       password: johnDoe.password,
