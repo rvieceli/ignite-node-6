@@ -10,7 +10,7 @@ class CreateTransferController {
 
     const createTransferUseCase = container.resolve(CreateTransferUseCase);
 
-    const statement = createTransferUseCase.execute({
+    const statement = await createTransferUseCase.execute({
       sender_id,
       user_id,
       amount,

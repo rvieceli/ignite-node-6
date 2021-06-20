@@ -11,12 +11,13 @@ const johnDoe: ICreateUserDTO = {
 
 const janeDoe: ICreateUserDTO = {
   name: "Jane Doe",
-  email: "jane.get.statement@gmail.com",
+  email: "create.statement.jane@gmail.com",
   password: "secret",
 };
 
 let connection: Connection;
 let Authorization: string;
+let janeId: string;
 
 describe("Get Balance Suite", () => {
   beforeAll(async () => {
@@ -24,6 +25,7 @@ describe("Get Balance Suite", () => {
     await connection.runMigrations();
 
     await request(app).post("/api/v1/users").send(johnDoe);
+    await request(app).post("/api/v1/users").send(janeDoe);
 
     const {
       body: { token },
@@ -33,6 +35,17 @@ describe("Get Balance Suite", () => {
     });
 
     Authorization = `Bearer ${token}`;
+
+    const {
+      body: {
+        user: { id },
+      },
+    } = await request(app).post("/api/v1/sessions").send({
+      email: janeDoe.email,
+      password: janeDoe.password,
+    });
+
+    janeId = id;
   });
 
   afterAll(async () => {
@@ -44,7 +57,7 @@ describe("Get Balance Suite", () => {
     const { body: createdDeposit } = await request(app)
       .post("/api/v1/statements/deposit")
       .send({
-        amount: 10,
+        amount: 20,
         description: "Deposit test #1",
       })
       .set({ Authorization })
@@ -57,6 +70,17 @@ describe("Get Balance Suite", () => {
         description: "Withdraw test #1",
       })
       .set({ Authorization })
+      .expect(201);
+
+    const { body: createdTransfer } = await request(app)
+      .post(`/api/v1/statements/transfers/${janeId}`)
+      .send({
+        amount: 10,
+        description: "Transfer test",
+      })
+      .set({
+        Authorization,
+      })
       .expect(201);
 
     const { body: deposit } = await request(app)
@@ -72,6 +96,13 @@ describe("Get Balance Suite", () => {
       .expect(200);
 
     expect(withdraw).toMatchObject(createdWithdraw);
+
+    const { body: transfer } = await request(app)
+      .get(`/api/v1/statements/${createdTransfer.id}`)
+      .set({ Authorization })
+      .expect(200);
+
+    expect(transfer).toMatchObject(createdTransfer);
   });
 
   it("should not be able to get statement that not exists", async () => {
@@ -105,8 +136,6 @@ describe("Get Balance Suite", () => {
       })
       .set({ Authorization })
       .expect(201);
-
-    await request(app).post("/api/v1/users").send(janeDoe);
 
     const {
       body: { token },

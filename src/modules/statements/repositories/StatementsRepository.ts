@@ -1,4 +1,4 @@
-import { getRepository, Repository } from "typeorm";
+import { Brackets, getRepository, Repository } from "typeorm";
 
 import { OperationType, Statement } from "../entities/Statement";
 import { ICreateStatementDTO } from "../useCases/createStatement/ICreateStatementDTO";
@@ -23,9 +23,15 @@ export class StatementsRepository implements IStatementsRepository {
     statement_id,
     user_id,
   }: IGetStatementOperationDTO): Promise<Statement | undefined> {
-    return this.repository.findOne(statement_id, {
-      where: { user_id },
-    });
+    return this.repository
+      .createQueryBuilder()
+      .where("id = :statement_id", { statement_id })
+      .andWhere(
+        new Brackets((qb) => {
+          qb.where({ user_id }).orWhere("sender_id = :user_id", { user_id });
+        })
+      )
+      .getOne();
   }
 
   async getUserBalance({
@@ -34,15 +40,23 @@ export class StatementsRepository implements IStatementsRepository {
   }: IGetBalanceDTO): Promise<
     { balance: number } | { balance: number; statement: Statement[] }
   > {
-    const statement = await this.repository.find({
-      where: { user_id },
-    });
+    const statement = await this.repository
+      .createQueryBuilder()
+      .where({ user_id })
+      .orWhere("sender_id = :user_id", { user_id })
+      .getMany();
 
     const balance = statement.reduce((acc, operation) => {
-      if (operation.type === "deposit") {
+      if (operation.type === OperationType.DEPOSIT) {
         return acc + operation.amount;
-      } else {
+      } else if (operation.type === OperationType.WITHDRAW) {
         return acc - operation.amount;
+      }
+
+      if (operation.sender_id === user_id) {
+        return acc - operation.amount;
+      } else {
+        return acc + operation.amount;
       }
     }, 0);
 

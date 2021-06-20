@@ -76,62 +76,47 @@ describe("Create Transfer Integration", () => {
       .expect(201);
   });
 
-  // it("should be able to create a new withdraw", async () => {
-  //   await request(app)
-  //     .post("/api/v1/statements/deposit")
-  //     .send({
-  //       amount: 50,
-  //       description: "Deposit for withdraw test",
-  //     })
-  //     .set({
-  //       Authorization,
-  //     })
-  //     .expect(201);
+  it("should not be able to create a new transfer higher than the balance", async () => {
+    const { body: balance } = await request(app)
+      .get("/api/v1/statements/balance")
+      .set({ Authorization });
 
-  //   await request(app)
-  //     .post("/api/v1/statements/withdraw")
-  //     .send({
-  //       amount: 50,
-  //       description: "Withdraw with balance test",
-  //     })
-  //     .set({
-  //       Authorization,
-  //     })
-  //     .expect(201);
-  // });
+    const { body, status } = await request(app)
+      .post(`/api/v1/statements/transfers/${janeId}`)
+      .send({
+        amount: balance.balance + 10.01,
+        description: "Transfer test",
+      })
+      .set({
+        Authorization,
+      })
+      .expect(400);
+  });
 
-  // it("should not be able to create a new withdraw higher than the balance", async () => {
-  //   const { body: balance } = await request(app)
-  //     .get("/api/v1/statements/balance")
-  //     .set({ Authorization });
+  it("should not be able to create a new transfer for user that does not exists", async () => {
+    const { body: balance } = await request(app)
+      .get("/api/v1/statements/balance")
+      .set({ Authorization });
 
-  //   await request(app)
-  //     .post("/api/v1/statements/withdraw")
-  //     .send({
-  //       amount: balance.balance + 0.01,
-  //       description: "Withdraw without balance test",
-  //     })
-  //     .set({
-  //       Authorization,
-  //     })
-  //     .expect(400);
-  // });
+    const { body, status } = await request(app)
+      .post(`/api/v1/statements/transfers/00000000-0000-0000-0000-000000000000`)
+      .send({
+        amount: balance.balance + 10.01,
+        description: "Transfer test",
+      })
+      .set({
+        Authorization,
+      })
+      .expect(404);
+  });
 
-  // it("should not be able to create a new statement unauthenticated", async () => {
-  //   await request(app)
-  //     .post("/api/v1/statements/deposit")
-  //     .send({
-  //       amount: 100,
-  //       description: "Deposit unauthenticated",
-  //     })
-  //     .expect(401);
-
-  //   await request(app)
-  //     .post("/api/v1/statements/withdraw")
-  //     .send({
-  //       amount: 100,
-  //       description: "Withdraw unauthenticated",
-  //     })
-  //     .expect(401);
-  // });
+  it("should not be able to create a new transfer unauthenticated", async () => {
+    await request(app)
+      .post(`/api/v1/statements/transfers/${janeId}`)
+      .send({
+        amount: 100,
+        description: "Transfer unauthenticated",
+      })
+      .expect(401);
+  });
 });
