@@ -26,7 +26,8 @@ export class InMemoryStatementsRepository implements IStatementsRepository {
   }: IGetStatementOperationDTO): Promise<Statement | undefined> {
     return this.statements.find(
       (operation) =>
-        operation.id === statement_id && operation.user_id === user_id
+        operation.id === statement_id &&
+        (operation.user_id === user_id || operation.sender_id === user_id)
     );
   }
 
